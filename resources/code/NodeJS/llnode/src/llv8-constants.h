@@ -1,0 +1,565 @@
+#ifndef SRC_LLV8_CONSTANTS_H_
+#define SRC_LLV8_CONSTANTS_H_
+
+#include <lldb/API/LLDB.h>
+
+#include "constants.h"
+
+namespace llnode {
+namespace v8 {
+namespace constants {
+
+// Forward declarations
+class Common;
+
+
+class Module : public Constants {
+ public:
+  void Assign(lldb::SBTarget target, Common* common = nullptr);
+
+  inline std::string constant_prefix() override { return "v8dbg_"; }
+
+ protected:
+  Common* common_;
+};
+
+class Common : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Common);
+
+  int64_t kPointerSize;
+  int64_t kVersionMajor;
+  int64_t kVersionMinor;
+  int64_t kVersionPatch;
+
+  bool CheckLowestVersion(int64_t major, int64_t minor, int64_t patch);
+  bool CheckHighestVersion(int64_t major, int64_t minor, int64_t patch);
+
+  // Public, because other modules may use it
+  void Load();
+};
+
+class Smi : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Smi);
+
+  int64_t kTag;
+  int64_t kTagMask;
+  int64_t kShiftSize;
+
+ protected:
+  void Load();
+};
+
+class HeapObject : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(HeapObject);
+
+  int64_t kTag;
+  int64_t kTagMask;
+
+  int64_t kMapOffset;
+
+ protected:
+  void Load();
+};
+
+class Map : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Map);
+
+  int64_t kMapTypeMask;
+  Constant<int64_t> kInstanceAttrsOffset;
+  int64_t kMaybeConstructorOffset;
+  Constant<int64_t> kInstanceDescriptorsOffset;
+  int64_t kBitField3Offset;
+  int64_t kInObjectPropertiesOffset;
+  int64_t kInObjectPropertiesStartOffset;
+  int64_t kInstanceSizeOffset;
+  int64_t kInstanceTypeOffset;
+  Constant<int64_t> kLayoutDescriptor;
+
+  int64_t kNumberOfOwnDescriptorsMask;
+  int64_t kNumberOfOwnDescriptorsShift;
+  int64_t kDictionaryMapShift;
+
+  bool HasUnboxedDoubleFields();
+
+ protected:
+  void Load();
+};
+
+class JSObject : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSObject);
+
+  int64_t kPropertiesOffset;
+  int64_t kElementsOffset;
+  int64_t kInternalFieldsOffset;
+
+ protected:
+  void Load();
+};
+
+class HeapNumber : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(HeapNumber);
+
+  int64_t kValueOffset;
+
+ protected:
+  void Load();
+};
+
+class JSArray : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSArray);
+
+  int64_t kLengthOffset;
+
+ protected:
+  void Load();
+};
+
+class JSFunction : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSFunction);
+
+  int64_t kSharedInfoOffset;
+  int64_t kContextOffset;
+
+ protected:
+  void Load();
+};
+
+class JSRegExp : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSRegExp);
+
+  int64_t kSourceOffset;
+
+ protected:
+  void Load();
+};
+
+class JSDate : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSDate);
+
+  int64_t kValueOffset;
+
+ protected:
+  void Load();
+};
+
+class SharedInfo : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(SharedInfo);
+
+  int64_t kNameOrScopeInfoOffset;
+  int64_t kNameOffset;
+  int64_t kInferredNameOffset;
+  int64_t kScriptOffset;
+  Constant<int64_t> kScriptOrDebugInfoOffset;
+  int64_t kStartPositionOffset;
+  int64_t kEndPositionOffset;
+  int64_t kParameterCountOffset;
+  int64_t kScopeInfoOffset;
+  int64_t kFunctionDataOffset;
+
+  int64_t kStartPositionMask;
+  int64_t kStartPositionShift;
+  int64_t kEndPositionShift;
+
+ protected:
+  void Load();
+};
+
+class UncompiledData : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(UncompiledData);
+
+  int64_t kInferredNameOffset;
+  int64_t kStartPositionOffset;
+  int64_t kEndPositionOffset;
+
+ protected:
+  void Load();
+};
+
+class Code : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Code)
+
+  int64_t kStartOffset;
+  int64_t kSizeOffset;
+
+ protected:
+  void Load();
+};
+
+class ScopeInfo : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(ScopeInfo);
+
+  int64_t kParameterCountOffset;
+  int64_t kStackLocalCountOffset;
+  int64_t kContextLocalCountOffset;
+  bool kEmbeddedParamAndStackLocals;
+  int64_t kVariablePartIndex;
+
+ protected:
+  void Load();
+};
+
+class Context : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Context);
+
+  int64_t kClosureIndex;
+  int64_t kScopeInfoIndex;
+  int64_t kGlobalObjectIndex;
+  int64_t kPreviousIndex;
+  int64_t kNativeIndex;
+  int64_t kEmbedderDataIndex;
+  int64_t kMinContextSlots;
+
+  inline bool hasClosure() {
+    // NOTE (mmarchini): V8 6.8 replaced the closure field (which was a
+    // JSFunction) with a scope_info field (which is a ScopeInfo). The change
+    // made it easier to get the scope info for a context, but removed our
+    // ability to get the outer function for a given context. We can still get
+    // the outer context through the previous field though.
+    return kClosureIndex != -1;
+  }
+
+ protected:
+  void Load();
+};
+
+class Script : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Script);
+
+  int64_t kNameOffset;
+  int64_t kLineOffsetOffset;
+  int64_t kSourceOffset;
+  int64_t kLineEndsOffset;
+
+ protected:
+  void Load();
+};
+
+class String : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(String);
+
+  int64_t kEncodingMask;
+  int64_t kRepresentationMask;
+
+  // Encoding
+  int64_t kOneByteStringTag;
+  int64_t kTwoByteStringTag;
+
+  // Representation
+  int64_t kSeqStringTag;
+  int64_t kConsStringTag;
+  int64_t kSlicedStringTag;
+  int64_t kExternalStringTag;
+  int64_t kThinStringTag;
+
+  int64_t kLengthOffset;
+  bool kLengthIsSmi;
+
+ protected:
+  void Load();
+};
+
+class OneByteString : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(OneByteString);
+
+  int64_t kCharsOffset;
+
+ protected:
+  void Load();
+};
+
+class TwoByteString : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(TwoByteString);
+
+  int64_t kCharsOffset;
+
+ protected:
+  void Load();
+};
+
+class ConsString : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(ConsString);
+
+  Constant<int64_t> kFirstOffset;
+  Constant<int64_t> kSecondOffset;
+
+ protected:
+  void Load();
+};
+
+class SlicedString : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(SlicedString);
+
+  int64_t kParentOffset;
+  Constant<int64_t> kOffsetOffset;
+
+ protected:
+  void Load();
+};
+
+class ThinString : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(ThinString);
+
+  Constant<int64_t> kActualOffset;
+
+ protected:
+  void Load();
+};
+
+class FixedArrayBase : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(FixedArrayBase);
+
+  int64_t kLengthOffset;
+
+ protected:
+  void Load();
+};
+
+class FixedArray : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(FixedArray);
+
+  int64_t kDataOffset;
+
+ protected:
+  void Load();
+};
+
+class FixedTypedArrayBase : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(FixedTypedArrayBase);
+
+  Constant<int64_t> kBasePointerOffset;
+  Constant<int64_t> kExternalPointerOffset;
+
+ protected:
+  void Load();
+};
+
+class JSTypedArray : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSTypedArray);
+
+  Constant<int64_t> kBasePointerOffset;
+  Constant<int64_t> kExternalPointerOffset;
+
+  bool IsDataPointerInJSTypedArray();
+
+ protected:
+  void Load();
+};
+
+class Oddball : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Oddball);
+
+  int64_t kKindOffset;
+
+  int64_t kException;
+  int64_t kFalse;
+  int64_t kTrue;
+  int64_t kUndefined;
+  int64_t kNull;
+  int64_t kTheHole;
+  int64_t kUninitialized;
+
+ protected:
+  void Load();
+};
+
+class JSArrayBuffer : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSArrayBuffer);
+
+  int64_t kKindOffset;
+
+  Constant<int64_t> kBackingStoreOffset;
+  Constant<int64_t> kByteLengthOffset;
+
+  int64_t kWasNeuteredMask;
+  int64_t kWasNeuteredShift;
+
+  Constant<int64_t> BitFieldOffset();
+  bool IsByteLengthScalar();
+
+ protected:
+  void Load();
+};
+
+class JSArrayBufferView : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(JSArrayBufferView);
+
+  int64_t kBufferOffset;
+  Constant<int64_t> kByteOffsetOffset;
+  Constant<int64_t> kByteLengthOffset;
+
+  bool IsByteLengthScalar();
+  bool IsByteOffsetScalar();
+
+ protected:
+  void Load();
+};
+
+class DescriptorArray : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(DescriptorArray);
+
+  Constant<int64_t> kDetailsOffset;
+  Constant<int64_t> kKeyOffset;
+  Constant<int64_t> kValueOffset;
+
+  int64_t kPropertyIndexMask;
+  int64_t kPropertyIndexShift;
+  int64_t kRepresentationMask;
+  int64_t kRepresentationShift;
+
+  int64_t kRepresentationDouble;
+
+  Constant<int64_t> kFirstIndex;
+  Constant<int64_t> kHeaderSize;
+  Constant<int64_t> kSize;
+  Constant<int64_t> kEntrySize;
+
+  // node.js <= 7
+  int64_t kPropertyTypeMask = -1;
+  int64_t kConstFieldType = -1;
+  int64_t kFieldType = -1;
+
+  // node.js >= 8
+  int64_t kPropertyAttributesMask = -1;
+  int64_t kPropertyAttributesShift = -1;
+  int64_t kPropertyAttributesEnum_NONE = -1;
+  int64_t kPropertyAttributesEnum_READ_ONLY = -1;
+  int64_t kPropertyAttributesEnum_DONT_ENUM = -1;
+  int64_t kPropertyAttributesEnum_DONT_DELETE = -1;
+
+  int64_t kPropertyKindMask = -1;
+  int64_t kPropertyKindEnum_kAccessor = -1;
+  int64_t kPropertyKindEnum_kData = -1;
+
+  int64_t kPropertyLocationMask = -1;
+  int64_t kPropertyLocationShift = -1;
+  int64_t kPropertyLocationEnum_kDescriptor = -1;
+  int64_t kPropertyLocationEnum_kField = -1;
+
+ protected:
+  void Load();
+};
+
+class NameDictionary : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(NameDictionary);
+
+  int64_t kKeyOffset;
+  int64_t kValueOffset;
+
+  int64_t kEntrySize;
+  int64_t kPrefixStartIndex;
+  int64_t kPrefixSize;
+
+ protected:
+  void Load();
+};
+
+class Frame : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Frame);
+
+  int64_t kContextOffset;
+  int64_t kFunctionOffset;
+  int64_t kArgsOffset;
+  int64_t kMarkerOffset;
+
+  int64_t kAdaptorFrame;
+  int64_t kEntryFrame;
+  int64_t kEntryConstructFrame;
+  int64_t kExitFrame;
+  int64_t kInternalFrame;
+  int64_t kConstructFrame;
+  int64_t kJSFrame;
+  int64_t kOptimizedFrame;
+  int64_t kStubFrame;
+
+ protected:
+  void Load();
+};
+
+
+class Symbol : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Symbol);
+
+  Constant<int64_t> kNameOffset;
+
+ protected:
+  void Load();
+};
+
+
+class Types : public Module {
+ public:
+  CONSTANTS_DEFAULT_METHODS(Types);
+
+  int64_t kFirstNonstringType;
+  int64_t kFirstJSObjectType;
+
+  int64_t kFirstContextType;
+  int64_t kLastContextType;
+
+  int64_t kJSErrorType;
+  int64_t kJSPromiseType;
+  int64_t kHeapNumberType;
+  int64_t kMapType;
+  int64_t kGlobalObjectType;
+  int64_t kGlobalProxyType;
+  int64_t kOddballType;
+  int64_t kJSObjectType;
+  int64_t kJSAPIObjectType;
+  int64_t kJSSpecialAPIObjectType;
+  int64_t kJSArrayType;
+  int64_t kCodeType;
+  int64_t kJSFunctionType;
+  int64_t kFixedArrayType;
+  int64_t kJSArrayBufferType;
+  int64_t kJSTypedArrayType;
+  Constant<int64_t> kJSRegExpType;
+  int64_t kJSDateType;
+  int64_t kSharedFunctionInfoType;
+  Constant<int64_t> kUncompiledDataWithoutPreParsedScopeType;
+  Constant<int64_t> kUncompiledDataWithPreParsedScopeType;
+  int64_t kScriptType;
+  int64_t kScopeInfoType;
+  int64_t kSymbolType;
+
+ protected:
+  void Load();
+};
+
+}  // namespace constants
+}  // namespace v8
+}  // namespace llnode
+
+#endif  // SRC_LLV8_CONSTANTS_H_

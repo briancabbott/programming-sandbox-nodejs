@@ -1,0 +1,18 @@
+providers:
+  - airtap-sauce
+
+browsers:
+  - name: chrome
+  - name: ie
+  - name: firefox
+  - name: safari
+  - name: edge
+
+presets:
+  local:
+    providers:
+      - airtap-playwright
+    browsers:
+      - name: chromium
+      - name: firefox
+      - name: webkit
